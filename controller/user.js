@@ -1,30 +1,23 @@
-const express = require('express');
-const router = express.Router();
+const User = require("../models/User");
 
-const models = require('./models'); 
-const auth = require('./auth'); 
-
-router.post('/login', async (req, res) => {
-  const { name, password } = req.body;
-
+const userById = async (req, res) => {
   try {
-    const user = await models.getUserByName(name);
-    if (!user) {
-      return res.status(401).json({ message: 'Username atau password salah!' });
-    }
+    const id = res.locals.id;
+    console.log(id);
+    const data = await User.getUserById(id);
 
-    const passwordMatch = await auth.comparePasswords(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Username atau password salah!' });
-    }
-
-    const token = auth.generateToken(user); 
-
-    res.json({ token, user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(200).json({
+      status: "Success",
+      data: data,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Server Error",
+    });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  userById,
+};

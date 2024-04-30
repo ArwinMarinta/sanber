@@ -1,17 +1,43 @@
-const bcrypt = require('bcrypt'); // For password hashing
+const jwt = require("jsonwebtoken");
 
-const comparePasswords = async (password, hash) => {
+exports.verifyToken = (req, res, next) => {
   try {
-    const match = await bcrypt.compare(password, hash);
-    return match;
-  } catch (err) {
-    throw err;
+    const authHeader = req.headers["authorization"];
+    if (!authHeader)
+      return res.status(401).json({
+        message: "Silahkan Login Terlebih Dahulu",
+      });
+
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token)
+      return res.status(401).json({
+        message: "Silahkan Login Terlebih Dahulu",
+      });
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        if (err instanceof jwt.TokenExpiredError) {
+          return res.status(401).json({
+            message: "Token kedaluwarsa, silahkan login ulang",
+          });
+        } else if (err instanceof jwt.JsonWebTokenError) {
+          return res.status(401).json({
+            message: "Token tidak valid. Silahkan login ulang",
+          });
+        } else {
+          console.log(err);
+          return res.status(500).json({
+            message: "Kesalahan pada internal server",
+          });
+        }
+      } else {
+        res.locals.user = decoded;
+        return next();
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Kesalahan pada internal server",
+    });
   }
 };
-
-const generateToken = (/* Implement token generation logic */) => {
-  // Replace with your token generation logic (e.g., JWT library)
-  return 'your_generated_token'; // Placeholder
-};
-
-module.exports = { comparePasswords, generateToken };
